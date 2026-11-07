@@ -40,7 +40,7 @@ local SaveManager = {} do
 			end,
 			Load = function(idx, data)
 				if Options[idx] then 
-					Options[idx]:SetValueRGB(Color3.fromHex(data.value), data.transparency)
+					Options[idx]:SetValueRGB(Color3.fromHex(data.value), Options[idx].HasTransparency and data.transparency or 0)
 				end
 			end,
 		},
@@ -189,11 +189,12 @@ local SaveManager = {} do
 			local name = readfile(self.Folder .. '/settings/autoload.txt')
 
 			local success, err = self:Load(name)
-			if not success then
+			if not success and not SILENT then
 				return self.Library:Notify('Failed to load autoload config: ' .. err)
 			end
-
-			self.Library:Notify(string.format('Auto loaded config %q', name))
+			if not SILENT then
+				self.Library:Notify(string.format('Auto loaded config %q', name))
+			end
 		end
 	end
 
@@ -251,11 +252,21 @@ local SaveManager = {} do
 			Options.SaveManager_ConfigList:SetValue(nil)
 		end)
 
-		section:AddButton('Set as autoload', function()
+		section:AddButton('Set autoload', function()
 			local name = Options.SaveManager_ConfigList.Value
+			if (not name) then
+				return;
+			end;
 			writefile(self.Folder .. '/settings/autoload.txt', name)
 			SaveManager.AutoloadLabel:SetText('Current autoload config: ' .. name)
 			self.Library:Notify(string.format('Set %q to auto load', name))
+		end):AddButton('Remove autoload', function()
+			local name = Options.SaveManager_ConfigList.Value
+			if (isfile(self.Folder .. '/settings/autoload.txt')) then
+				delfile(self.Folder .. '/settings/autoload.txt');
+			end;
+			SaveManager.AutoloadLabel:SetText('Current autoload config: none')
+			self.Library:Notify("removed autoload");
 		end)
 
 		SaveManager.AutoloadLabel = section:AddLabel('Current autoload config: none', true)
@@ -270,5 +281,5 @@ local SaveManager = {} do
 
 	SaveManager:BuildFolderTree()
 end
-
+getgenv().SaveManager = SaveManager;
 return SaveManager
